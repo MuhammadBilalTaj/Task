@@ -1,0 +1,355 @@
+﻿
+
+@{
+    ViewData["Title"] = "ListOfUsers";
+}
+
+<h2>ListOfUsers</h2>
+
+
+@*<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/css/bootstrap.min.css">*@
+<link href="~/lib/bootstrap/dist/css/bootstrap.css" rel="stylesheet" />
+<link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/1.11.3/css/jquery.dataTables.css">
+
+<div class="container border" style="padding:20px">
+
+    <div class="row">
+        <div class="col-md-12 border border-danger">
+
+
+
+            <form id="frm_User" class="">
+                <input type="hidden" id="hdn_UserID" />
+                <div class="form-group row">
+                    <div class="col-md-2">
+                        <label>First Name</label>
+                    </div>
+                    <div class="col-md-2">
+                        <input type="text" id="txtFN" name="txtFN" class="form-control" />
+                    </div>
+
+                    <div class="col-md-2">
+                        <label>Last Name</label>
+                    </div>
+                    <div class="col-md-2">
+                        <input type="text" id="txtLN" name="txtLN" class="form-control" />
+                    </div>
+
+                </div>
+                <div class="form-group row">
+                    <div class="col-md-2">
+                        <label>Email</label>
+                    </div>
+                    <div class="col-md-2">
+                        <input type="text" id="txtEmail" name="txtEmail" class="form-control" />
+                    </div>
+
+
+                    <div class="col-md-2">
+                        <label>Mobile Number</label>
+                    </div>
+                    <div class="col-md-2">
+                        <input type="text" id="txtMn" name="txtMn" class="form-control" />
+                    </div>
+
+                </div>
+
+
+                <div class="form-group row">
+                    <div class="col-md-2">
+                        <label>Status</label>
+                    </div>
+
+                    <div class="col-md-2">
+                        <input type="checkbox" id="cbIsActive" name="txtMn" class="checkbox" />
+                    </div>
+
+                    <div class="col-md-2">
+
+                    </div>
+                    <div class="col-md-2">
+                        <button id="btnSave" class="form-control btn btn-success">Save</button>
+                    </div>
+
+                </div>
+
+
+
+            </form>
+
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-12">
+            <table id="table_id" class="display">
+                <thead>
+                    <tr>
+                        <th>First Name</th>
+                        <th>Last Name</th>
+                        <th>Email</th>
+                        <th>Mobile Number</th>
+                        <th>Status</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="table_Body_id"></tbody>
+            </table>
+
+        </div>
+    </div>
+
+
+
+</div>
+
+
+
+
+
+
+
+
+@*<script src="https://code.jquery.com/jquery-3.6.0.min.js" integrity="sha256-/xUj+3OJU5yExlq6GSYGSHk7tPXikynS7ogEvDej/m4=" crossorigin="anonymous"></script>*@
+<script src="~/lib/jquery/dist/jquery.js"></script>
+<script type="text/javascript" charset="utf8" src="https://cdn.datatables.net/1.11.3/js/jquery.dataTables.js"></script>
+
+@*<script src="~/lib/customvlaidator/validator.js"></script>*@
+<script src="~/lib/jquery-validation/dist/jquery.validate.js"></script>
+
+<script>
+    $(document).ready(function () {
+        GetDataOnPageLoad();
+        InitGlobalFormValidation("frm_User");
+    });
+    function GetDataOnPageLoad() {
+        debugger;
+        $.ajax({
+            url: '/UserList/Users',
+            type: 'GET',
+            dataType: 'json',
+            success: function (data) {
+
+                debugger;
+                var MyHtml = "";
+                $.each(data, function (ind) {
+                    MyHtml += '<tr>';
+                    MyHtml += '<td>' + data[ind].firstName + '</td>';
+                    MyHtml += '<td>' + data[ind].lastName + '</td>';
+                    MyHtml += '<td>' + data[ind].email + '</td>';
+                    MyHtml += '<td>' + data[ind].mobileNumber + '</td>';
+                    MyHtml += '<td>' + data[ind].isActive + '</td>';
+                    MyHtml += '<td><a onclick="EditUser(' + data[ind].id + ')">Edit</a></td>';
+                    MyHtml += '</tr>';
+                });
+
+                $('#table_Body_id').html(MyHtml);
+                $('#table_id').DataTable();
+
+
+            },
+            error: function (request, error) {
+                alert("Request :" + JSON.stringify(request));
+            }
+
+        }); //Ajax Call end
+    }
+
+    function EditUser(ID) {
+        debugger;
+        $.ajax({
+            url: '/UserList/GetUserByID?ID=' + ID,
+            type: 'GET',
+            dataType: 'json',
+            success: function (data) {
+                debugger
+                $('#txtFN').val(data.firstName);
+                $('#txtLN').val(data.lastName);
+                $('#txtEmail').val(data.email);
+                $('#txtMn').val(data.mobileNumber);
+                $('#hdn_UserID').val(data.id);
+
+                if (data.isActive == true) {
+                    $('#cbIsActive').attr('checked', true)
+                } else {
+                    $('#cbIsActive').attr('checked', false)
+                }
+
+
+
+            },
+            error: function (request, error) {
+                alert("Request :" + JSON.stringify(request));
+            }
+
+        }); //Ajax Call end
+    }
+
+    $('#btnSave').click(function () {
+
+        debugger;
+        event.preventDefault();
+        $('#frm_User').validate();
+        var Form_IsValid = $('#frm_User').valid();
+        if (Form_IsValid) {
+
+            if ($('#hdn_UserID').val() != '') {
+                //Edit
+                var status;
+
+                if ($('#cbIsActive').prop('checked')) {
+                    status = true;
+                } else {
+                    status = false;
+                }
+
+
+                $.ajax({
+                    url: '/UserList/EditUser',
+                    type: 'POST',
+                    dataType: 'json',
+                    data: {
+                        id: $('#hdn_UserID').val(),
+                        FirstName: $('#txtFN').val(),
+                        LastName: $("#txtLN").val(),
+                        Email: $("#txtEmail").val(),
+                        MobileNumber: $("#txtMn").val(),
+                        IsActive: status
+                    },
+                    success: function (data) {
+                        $('#hdn_UserID').val('');
+                        alert('User Edited...!');
+                        $('#frm_User').trigger("reset");
+                        GetDataOnPageLoad();
+
+                    },
+                    error: function (request, error) {
+                        alert("Request :" + JSON.stringify(request));
+
+                    }
+
+                });
+
+            } else {
+                var status;
+
+                if ($('#cbIsActive').prop('checked')) {
+                    status = true;
+                } else {
+                    status = false;
+                }
+
+
+                $.ajax({
+                    url: '/UserList/Create',
+                    type: 'POST',
+                    dataType: 'json',
+                    data: {
+
+                        FirstName: $('#txtFN').val(),
+                        LastName: $("#txtLN").val(),
+                        Email: $("#txtEmail").val(),
+                        MobileNumber: $("#txtMn").val(),
+                        IsActive: status
+                    },
+                    success: function (data) {
+
+                        alert('User Added...!');
+                    },
+                    error: function (request, error) {
+                        alert("Request :" + JSON.stringify(request));
+
+                    }
+
+                });
+            }
+        } else {
+            e.preventDefault();
+        }
+    });
+
+
+    //frm_User==================== Input Validation
+
+
+    function InitGlobalFormValidation(FormID) {
+
+        var form1 = $('#' + FormID);
+        var error1 = $('.alert-danger', form1);
+        var success1 = $('.alert-success', form1);
+
+        $('#' + FormID).validate({
+            errorElement: 'span', //default input error message container
+            errorClass: 'help-block help-block-error', // default input error message class
+            focusInvalid: false, // do not focus the last invalid input
+            ignore: "", // validate all fields including form hidden input
+            messages: {
+                txtFN: {
+                    required: jQuery.validator.format("First Name is Mandatory"),
+
+                },
+                txtEmail: {
+                    required: jQuery.validator.format("Email is Mandatory"),
+
+                },
+                txtLN: {
+                    required: jQuery.validator.format("Last Name is Mandatory"),
+
+                },
+                txtMn: {
+                    required: jQuery.validator.format("Mobile is Mandatory"),
+
+                }
+            },
+            rules: {
+                txtFN: {
+                    
+                    required: true
+                },
+                txtEmail: {
+                    email:true,
+                    required: true
+                },
+                txtLN: {
+
+                    required: true
+                }
+                ,
+                txtMn: {
+
+                    required: true
+                }
+            },
+
+            invalidHandler: function (event, validator) { //display error alert on form submit
+                success1.hide();
+                error1.show();
+              
+            },
+
+            highlight: function (element) { // hightlight error inputs
+                $(element)
+                    .closest('.form-group').addClass('has-error'); // set error class to the control group
+            },
+
+            unhighlight: function (element) { // revert the change done by hightlight
+                $(element)
+                    .closest('.form-group').removeClass('has-error'); // set error class to the control group
+            },
+
+            success: function (label) {
+                label
+                    .closest('.form-group').removeClass('has-error'); // set success class to the control group
+            },
+
+            submitHandler: function (form) {
+                success1.show();
+                error1.hide();
+            }
+        });
+
+
+
+    }
+
+</script>
